@@ -1,0 +1,49 @@
+#!/usr/bin/env php
+<?php
+
+require 'vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Input\{InputInterface, InputArgument};
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Command\Command;
+use Phai\ParseFile;
+
+$application = new Application();
+
+$application->register('g:test')
+    ->setDescription('Generate tests for a file.')
+    ->addArgument('file', InputArgument::REQUIRED)
+    ->setCode(function (InputInterface $input, OutputInterface $output): int {
+        
+        $_file = $input->getArgument('file');
+
+        if(!is_file($_file)){
+            $output->writeln("\n <options=bold,underscore>$_file</> <error> doesn't exist! </error>\n");
+            return Command::INVALID;
+        }
+
+        $output->writeln("");
+
+        try {
+            $parser = new ParseFile($_file);
+            
+            foreach($parser->generate() as $step){
+                list($err, $result) = $step;
+
+                if(is_null($err)){
+                    $output->writeln("<info> >> </info>$result");
+                }else{
+                    $output->writeln("\n <error>$err</error>\n");
+                    return Command::FAILURE;
+                }
+            }
+
+            $output->writeln("");
+            return Command::SUCCESS;
+        } catch (\Exception $err) {
+            
+        }
+    });
+
+$application->run();
